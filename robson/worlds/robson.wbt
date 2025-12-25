@@ -1,0 +1,49 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/adept/pioneer3/protos/Pioneer3dx.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/devices/velodyne/protos/VelodyneVLP-16.proto"
+
+WorldInfo {
+}
+Viewpoint {
+  orientation -0.31902941518149064 0.19991574103859042 0.9264199526855774 2.089641944756635
+  position 6.363934409765228 0.7454028427685069 1.6490272910085135
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+RectangleArena {
+  floorSize 15 15
+}
+Pioneer3dx {
+  hidden position_0_0 2.5194213480987178
+  hidden position_0_1 169.35668577794112
+  hidden position_0_2 169.11611337137222
+  hidden linearVelocity_0 -0.32572584860430887 0.3935558928342039 6.538888678215437e-07
+  hidden angularVelocity_0 -1.2164431763336137e-05 -1.468938324158808e-05 0.0003562444073949657
+  hidden rotation_1 0.8092024027391974 0.4154463932005882 0.4154464655978338 1.7809385670060842
+  hidden position_1_0 -128.14087652153492
+  hidden linearVelocity_1 -0.3256632657941999 0.39358632445385944 2.531592460088456e-06
+  hidden angularVelocity_1 -0.00021630716714915408 0.0002352800783037693 -0.007799959046537934
+  hidden rotation_2 -1 0 0 2.477170377943191
+  hidden linearVelocity_2 -0.3255873589022326 0.39359089598036506 5.578204204077584e-07
+  hidden angularVelocity_2 -10.493451444587352 -0.7348464855131517 0.23169113777481326
+  hidden rotation_4 0.6868359960382283 -0.6868360225882797 -0.23772377378227663 2.674809319147631
+  hidden linearVelocity_4 -0.3257026239040228 0.39349696139756923 -9.693792225595527e-07
+  hidden angularVelocity_4 -4.036277440269257 -3.341566304151729 -0.0010104481340964685
+  hidden rotation_9 0.6989858683782264 -0.698985900766228 -0.15112070122111543 2.8416209406852277
+  hidden linearVelocity_9 -0.32577776679619314 0.393587715086997 1.8161380208272738e-07
+  hidden angularVelocity_9 -4.036294807629012 -3.341580682919835 -0.0010104554887699004
+  translation 5.5466312772626205 2.529154438930679 0.09461329866549772
+  rotation 0.01970924660049768 -0.00943156490096305 0.9997612670942797 2.262506770646561
+  controller "robson"
+  extensionSlot [
+    VelodyneVLP-16 {
+      translation 0 0 0.19
+    }
+  ]
+}
