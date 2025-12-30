@@ -105,3 +105,11 @@ class OccupancyGrid:
                     int(scale),
                     int(scale)
                 )
+
+    # ----------------------------
+    # Conversão grid → mundo
+    # ----------------------------
+    def grid_to_world(self, gx, gy):
+        x = (gx - self.center) * self.resolution
+        y = (gy - self.center) * self.resolution
+        return x, y
