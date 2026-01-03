@@ -1,144 +1,187 @@
 from controller import Keyboard
 from robot_interface import RobotInterface
-from motion import MotionController
 from sensors import LidarSensor
 from mapping import OccupancyGrid
 from planning import AStarPlanner
 import math
+import cv2
+import numpy as np
 
-# ============================
+# ==================================================
 # Inicialização
-# ============================
+# ==================================================
 robot = RobotInterface()
-motion = MotionController(robot)
-lidar = LidarSensor(robot, name="Velodyne VLP-16", layer_index=7)
+lidar = LidarSensor(robot, name="Velodyne VLP-16")
 
-display = robot.robot.getDevice("debug_display")
-grid = OccupancyGrid(size_m=10.0, resolution=0.05)
+# Aumentei um pouco a resolução para o A* ser mais rápido e tolerante
+grid = OccupancyGrid(size_m=20.0, resolution=0.1) 
 planner = AStarPlanner(grid)
 
 keyboard = Keyboard()
 keyboard.enable(robot.timestep)
 
-print("Mapeamento + A* + ODOMETRIA (CORREÇÃO CINEMÁTICA)")
-print("P = planejar | F = seguir | Q = sair")
+cv2.namedWindow("MAP", cv2.WINDOW_NORMAL)
 
-# ============================
-# Planejamento
-# ============================
+# ==================================================
+# Estado
+# ==================================================
 path = None
-path_index = 0
+trajectory = []
 following = False
 
-# ============================
-# Parâmetros físicos (Pioneer 3-DX)
-# ============================
-WHEEL_RADIUS = 0.0975   # m
-WHEEL_BASE = 0.33       # m
-MAX_WHEEL_SPEED = 12.3  # rad/s
+LOOKAHEAD_DISTANCE = 0.6
+BASE_SPEED = 4.0 # Aumentei um pouco, 1.0 é muito lento para Pioneer
+GOAL_THRESHOLD = 0.4
 
-# ============================
-# Parâmetros de controle
-# ============================
-Kp_ang = 3.0
-Kp_lin = 1.5
+def find_lookahead(path, x, y, Ld):
+    target = None
+    # Procura o último ponto do caminho que está a uma distância Ld
+    # ou o mais próximo possível fora desse raio
+    for px, py in reversed(path):
+        dist = math.hypot(px - x, py - y)
+        if dist <= Ld:
+             # Achamos um ponto dentro do raio, o target deve ser o próximo (que está fora)
+             # Mas simplificando: pegamos o ponto logo na borda do raio
+             pass
+        else:
+            target = (px, py)
+            # Se achamos um ponto longe o suficiente (de trás pra frente), é ele
+            return target
+    
+    # Fallback: se todos pontos estão perto, vai pro final
+    if path:
+        return path[-1]
+    return None
 
-MAX_LIN = 1.5   # m/s
-MAX_ANG = 3.0   # rad/s
-
-ANGLE_ALIGN_THRESHOLD = 0.3
-WAYPOINT_THRESHOLD = 0.25
-
-def normalize_angle(a):
-    while a > math.pi:
-        a -= 2 * math.pi
-    while a < -math.pi:
-        a += 2 * math.pi
-    return a
-
-# ============================
+# ==================================================
 # Loop principal
-# ============================
+# ==================================================
 while robot.step():
     key = keyboard.getKey()
 
+    # ---------- Encerrar ----------
     if key == ord('Q'):
         break
 
+    # ---------- Planejar (Tecla P) ----------
     if key == ord('P'):
         start = grid.world_to_grid(robot.x, robot.y)
-        goal_world = (2.0, 1.0)
+        # Define um goal fixo para teste ou aleatório se preferir
+        goal_world = (2.0, 0.0) 
         goal = grid.world_to_grid(*goal_world)
 
-        path = planner.plan(start, goal)
-        if path:
-            path_index = 0
+        print(f"Planejando de {robot.x:.2f},{robot.y:.2f} para {goal_world}...")
+        grid_path = planner.plan(start, goal)
+        
+        if grid_path:
+            path = [grid.grid_to_world(x, y) for x, y in grid_path]
             following = False
-            print(f"Caminho com {len(path)} pontos")
+            print(f"Caminho encontrado: {len(path)} passos")
+        else:
+            print("Caminho não encontrado!")
 
+    # ---------- Seguir (Tecla F) ----------
     if key == ord('F') and path:
         following = True
-        print("Seguindo caminho")
+        print("Iniciando navegação...")
 
-    # ----------------------------
-    # Mapeamento contínuo
-    # ----------------------------
-    ranges = lidar.get_2d_layer_ranges()
-    points = lidar.ranges_to_points_xy(ranges)
-    grid.update_from_points(points)
-    grid.draw(display)
+    # ==================================================
+    # 1. PEGAR ESTADO
+    # ==================================================
+    robot_pose = robot.get_pose()
+    x, y, theta = robot_pose
+    
+    # Armazena trajetória para debug visual
+    trajectory.append((x, y))
 
-    # ----------------------------
-    # Seguimento com CINEMÁTICA CORRETA
-    # ----------------------------
-    if following and path_index < len(path):
-        gx, gy = path[path_index]
-        tx, ty = grid.grid_to_world(gx, gy)
+    # ==================================================
+    # 2. MAPEAMENTO
+    # ==================================================
+    points = lidar.get_2d_points()
+    grid.update_from_points(points, robot_pose)
 
-        x, y, theta = robot.get_pose()
+    # ==================================================
+    # 3. CONTROLE (PURE PURSUIT)
+    # ==================================================
+    if following and path:
+        gx, gy = path[-1]
+        dist_to_goal = math.hypot(gx - x, gy - y)
+        
+        if dist_to_goal < GOAL_THRESHOLD:
+            robot.set_speed(0.0, 0.0)
+            following = False
+            print("CHEGOU NO OBJETIVO!")
+            path = None # Limpa caminho
+        else:
+            look = find_lookahead(path, x, y, LOOKAHEAD_DISTANCE)
+            if look:
+                lx, ly = look
+                
+                # Transformação para frame do robô
+                dx = lx - x
+                dy = ly - y
 
-        dx = tx - x
-        dy = ty - y
-        dist = math.hypot(dx, dy)
+                # Rotação da matriz inversa
+                # Se theta estiver correto (Bussola corrigida), isso funciona
+                x_r = math.cos(theta) * dx + math.sin(theta) * dy
+                y_r = -math.sin(theta) * dx + math.cos(theta) * dy
 
-        desired_theta = math.atan2(dy, dx)
-        angle_error = normalize_angle(desired_theta - theta)
+                # Curvatura
+                # y_r é o erro lateral. Se for negativo, ponto está à direita (ou esq dependendo do eixo)
+                curvature = 2 * y_r / (LOOKAHEAD_DISTANCE ** 2)
+                
+                v = BASE_SPEED
+                # Reduz velocidade em curvas fechadas
+                v = v / (1 + abs(curvature)*0.5)
+                
+                omega = v * curvature
 
-        # Controle P
-        v = Kp_lin * dist
-        omega = Kp_ang * angle_error
+                # Cinemática Pioneer
+                L = 0.33 # eixo
+                R = 0.0975 # roda
+                
+                vl = (v - omega * L / 2) / R
+                vr = (v + omega * L / 2) / R
 
-        # Saturação de referência
-        v = max(min(v, MAX_LIN), 0.0)
-        omega = max(min(omega, MAX_ANG), -MAX_ANG)
-
-        # PRIORIDADE ANGULAR
-        if abs(angle_error) > ANGLE_ALIGN_THRESHOLD:
-            v = 0.0  # gira no lugar
-
-        # ----------------------------
-        # CINEMÁTICA INVERSA CORRETA
-        # ----------------------------
-        v_l = (v - omega * WHEEL_BASE / 2.0) / WHEEL_RADIUS
-        v_r = (v + omega * WHEEL_BASE / 2.0) / WHEEL_RADIUS
-
-        # Saturação real dos motores
-        v_l = max(min(v_l, MAX_WHEEL_SPEED), -MAX_WHEEL_SPEED)
-        v_r = max(min(v_r, MAX_WHEEL_SPEED), -MAX_WHEEL_SPEED)
-
-        robot.set_speed(v_l, v_r)
-
-        if dist < WAYPOINT_THRESHOLD:
-            path_index += 1
+                robot.set_speed(vl, vr)
+            else:
+                 # Sem lookahead válido
+                 robot.set_speed(0.0, 0.0)
 
     else:
-        motion.forward(0.5)
+        # Modo manual ou parado
+        # Adicione controle manual aqui se quiser (setas)
+        robot.set_speed(0.0, 0.0)
 
-# ============================
-# Salvar mapa final
-# ============================
-w = display.getWidth()
-h = display.getHeight()
-image = display.imageCopy(0, 0, w, h)
-display.imageSave(image, "final_map.png")
-display.imageDelete(image)
+    # ==================================================
+    # 4. VISUALIZAÇÃO
+    # ==================================================
+    img = grid.to_cv_image(scale=3) # Scale menor para performance
+
+    # Desenha o robô
+    rx, ry = grid.world_to_grid(x, y)
+    cv2.circle(img, (rx * 3, ry * 3), 4, (0, 255, 255), -1)
+    
+    # Desenha direção do robô (uma linha curta)
+    end_x = int(rx * 3 + 10 * math.cos(-theta)) # -theta para visualização as vezes
+    end_y = int(ry * 3 + 10 * math.sin(-theta))
+    # Nota: No OpenCV Y cresce para baixo, no mundo cresce para cima/Norte. 
+    # Essa inversão visual é normal.
+
+    # Desenha caminho
+    if path:
+        pts = []
+        for px, py in path:
+            gx, gy = grid.world_to_grid(px, py)
+            pts.append([gx * 3, gy * 3])
+        cv2.polylines(img, [np.array(pts)], False, (0, 0, 255), 1)
+        
+        # Desenha lookahead point
+        if following and 'lx' in locals():
+            lgx, lgy = grid.world_to_grid(lx, ly)
+            cv2.circle(img, (lgx*3, lgy*3), 3, (255, 0, 255), -1)
+
+    cv2.imshow("MAP", img)
+    cv2.waitKey(1)
+
+cv2.destroyAllWindows()

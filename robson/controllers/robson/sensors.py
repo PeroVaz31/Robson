@@ -1,71 +1,68 @@
 import math
 
 class LidarSensor:
-    def __init__(self, robot_interface, name="Velodyne VLP-16", layer_index=7):
+    """
+    Interface para LiDAR do Webots.
+    Retorna pontos (x, y) no FRAME DO ROBÔ.
+    Pontos inválidos (NaN / inf) são descartados.
+    """
+
+    def __init__(self, robot_interface, name="Velodyne VLP-16"):
+        self.robot_interface = robot_interface
         self.robot = robot_interface.robot
         self.timestep = robot_interface.timestep
 
         self.lidar = self.robot.getDevice(name)
-        if self.lidar is None:
-            raise RuntimeError(f"LiDAR '{name}' não encontrado.")
-
         self.lidar.enable(self.timestep)
+        self.lidar.enablePointCloud()
 
-        # Configurações
-        self.layer_index = layer_index
-        self.num_layers = self.lidar.getNumberOfLayers()
-        self.h_res = self.lidar.getHorizontalResolution()
-        self.fov = self.lidar.getFov()  # rad
-
-        # Display para debug (opcional)
-        self.display = self.robot.getDevice("debug_display")
-
-    def get_2d_layer_ranges(self):
-        ranges = self.lidar.getRangeImage()
-        if not ranges:
-            return None
-
-        start = self.layer_index * self.h_res
-        end = start + self.h_res
-        return ranges[start:end]
-
-    def ranges_to_points_xy(self, ranges):
-        """Converte ranges 2D em pontos (x,y) no frame do robô."""
+    # ==================================================
+    # Pontos 2D válidos no frame do robô
+    # ==================================================
+    def get_2d_points(self):
+        """
+        Projeta o LiDAR 3D em um plano 2D.
+        Filtra o próprio robô e camadas inúteis.
+        """
         points = []
-        if not ranges:
+        cloud = self.lidar.getPointCloud()
+
+        if not cloud:
             return points
 
-        angle_min = -self.fov / 2.0
-        angle_inc = self.fov / (len(ranges) - 1)
+        # ===== CONFIGURAÇÕES DE FILTRO =====
+        # O Pioneer tem aprox 44cm de comprimento e 38cm de largura.
+        # Precisamos ignorar tudo dentro de um raio de segurança.
+        MIN_DIST_SQ = 0.40 ** 2  # 40cm de raio cego (ao quadrado para otimizar)
+        
+        # Filtro de altura (Z relativo ao sensor)
+        # O VLP-16 tem camadas de -15 a +15 graus.
+        # Z=0 é o horizonte. 
+        # Vamos pegar uma fatia fina ao redor do horizonte para evitar o chão e o teto.
+        Z_MIN = -0.15 
+        Z_MAX = 0.05
+        # ===================================
 
-        for i, r in enumerate(ranges):
-            if r <= 0.01 or math.isinf(r):
+        for p in cloud:
+            x, y, z = p.x, p.y, p.z
+
+            # 1. Filtro de Altura (Ignora chão e teto)
+            if z < Z_MIN or z > Z_MAX:
                 continue
-            theta = angle_min + i * angle_inc
-            x = r * math.cos(theta)
-            y = r * math.sin(theta)
+
+            # 2. Filtro de "Self-Collision" (Ignora o próprio robô)
+            # Calcula distância ao quadrado no plano XY
+            dist_sq = x*x + y*y
+            
+            if dist_sq < MIN_DIST_SQ:
+                continue
+
+            # 3. Filtro de Validade Numérica
+            if math.isnan(x) or math.isnan(y) or math.isinf(x) or math.isinf(y):
+                continue
+
+            # Se passou em tudo, adiciona na lista
+            # No Webots PointCloud: x=frente, y=esquerda
             points.append((x, y))
+
         return points
-
-    def debug_draw_points(self, points, scale=15):
-        """Desenha pontos no Display para validação visual."""
-        if not self.display:
-            return
-
-        w = self.display.getWidth()
-        h = self.display.getHeight()
-        cx, cy = w // 2, h // 2
-
-        self.display.setColor(0x000000)
-        self.display.fillRectangle(0, 0, w, h)
-
-        self.display.setColor(0x00FF00)
-        for x, y in points:
-            px = int(cx + x * scale)
-            py = int(cy - y * scale)
-            if 0 <= px < w and 0 <= py < h:
-                self.display.drawPixel(px, py)
-
-        # Eixo frontal (vermelho)
-        self.display.setColor(0xFF0000)
-        self.display.drawLine(cx, cy, cx + 20, cy)
