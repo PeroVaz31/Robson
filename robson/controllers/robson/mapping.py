@@ -24,9 +24,10 @@ class OccupancyGrid:
     # Conversões de coordenadas
     # ==================================================
     def world_to_grid(self, x, y):
-        gx = int(x / self.resolution) + self.center
-        gy = int(y / self.resolution) + self.center
+        gx = int(round(x / self.resolution)) + self.center
+        gy = int(round(y / self.resolution)) + self.center
         return gx, gy
+
 
     def grid_to_world(self, gx, gy):
         x = (gx - self.center) * self.resolution
@@ -79,7 +80,7 @@ class OccupancyGrid:
             self.grid[cx][cy] = 1
 
     # ==================================================
-    # ATUALIZAÇÃO GLOBAL DO MAPA
+    # ATUALIZAÇÃO GLOBAL DO MAPA (aqui deve estar a merda!!!!)
     # (LiDAR no frame do robô → mapa no mundo)
     # ==================================================
     def update_from_points(self, points, robot_pose):
@@ -128,13 +129,14 @@ class OccupancyGrid:
         for i in range(self.cells):
             for j in range(self.cells):
                 v = self.grid[i][j]
+                iy = self.cells - 1 - j  # INVERTE O Y AQUI
 
                 if v == -1:
-                    img[j, i] = (40, 40, 40)        # desconhecido
+                    img[iy, i] = (40, 40, 40)        # desconhecido
                 elif v == 0:
-                    img[j, i] = (180, 180, 180)    # livre
+                    img[iy, i] = (180, 180, 180)    # livre
                 else:
-                    img[j, i] = (0, 255, 0)        # ocupado
+                    img[iy, i] = (0, 255, 0)        # ocupado
 
         if scale != 1:
             img = cv2.resize(

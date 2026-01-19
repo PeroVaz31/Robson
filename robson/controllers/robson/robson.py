@@ -70,7 +70,6 @@ while robot.step():
         goal_world = (2.0, 0.0) 
         goal = grid.world_to_grid(*goal_world)
 
-        print(f"Planejando de {robot.x:.2f},{robot.y:.2f} para {goal_world}...")
         grid_path = planner.plan(start, goal)
         
         if grid_path:
@@ -90,6 +89,10 @@ while robot.step():
     # ==================================================
     robot_pose = robot.get_pose()
     x, y, theta = robot_pose
+
+    pos = robot.gps.getValues()
+    #rint(f"GPS raw -> x:{pos[0]:.3f}  y:{pos[1]:.3f}  z:{pos[2]:.3f}")
+
     
     # Armazena trajetória para debug visual
     trajectory.append((x, y))

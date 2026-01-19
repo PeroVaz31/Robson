@@ -1,4 +1,5 @@
 import math
+from operator import pos
 from controller import Robot
 
 class RobotInterface:
@@ -40,35 +41,26 @@ class RobotInterface:
         return self.robot.step(self.timestep) != -1
 
     def get_pose(self):
-        # GPS
+        # 1. Pega a Posição (GPS) - ESSENCIAL
         pos = self.gps.getValues()
-        # Webots Coordinate System:
-        # X -> Leste/Oeste
-        # Y -> Cima/Baixo (Ignorar)
-        # Z -> Norte/Sul
         self.x = pos[0]
-        self.y = pos[2] # Usamos Z do Webots como Y do plano 2D
+        self.y = pos[1]
 
-        # Compass
+        # 2. Pega a Rotação (Compass)
         north = self.compass.getValues()
+        rad = math.atan2(north[2], north[0])
         
-        # O norte magnético no Webots é o eixo Z (geralmente [0, 0, 1])
-        # O Norte do plano cartesiano é X (geralmente [1, 0, 0])
-        # north[0] = X, north[2] = Z
-        rad = math.atan2(north[0], north[2])
+        # --- A CORREÇÃO CERTA ---
+        # Mantemos 'rad' positivo (para a rotação acompanhar o robô corretamente)
+        # E subtraímos 1.5708 (PI/2) para alinhar o Norte do Webots com o X do mapa.
+
+        self.theta = -rad 
         
-        # ===== CORREÇÃO DO DESLIZAMENTO =====
-        # Antes estava: bearing = (rad - 1.5708)
-        # Se o mapa "corre" para a esquerda enquanto o robô vai para direita,
-        # significa que estamos 180 graus invertidos.
-        # Adicionamos math.pi para girar o mundo mental do robô corretamente.
-        bearing = (rad - 1.5708 + math.pi)
-        
-        # Mantemos a inversão de sinal se a rotação estava correta (não girava o mapa)
-        self.theta = -bearing 
-        
-        # Normalização simples entre -PI e PI para evitar números gigantes
+        # Normalização entre -PI e PI
         self.theta = math.atan2(math.sin(self.theta), math.cos(self.theta))
+
+        # DEBUG: Se ainda der pau, descomente a linha abaixo para ler o ângulo no console
+        # print(f"Theta: {self.theta:.2f}")
 
         return self.x, self.y, self.theta
 
