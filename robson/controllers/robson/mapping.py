@@ -4,21 +4,22 @@ import math
 
 
 class OccupancyGrid:
-    """
-    Occupancy Grid GLOBAL
-    -1 = desconhecido
-     0 = livre
-     1 = ocupado
-    """
-
     def __init__(self, size_m=10.0, resolution=0.05):
+                # Log-odds parameters
+        self.L_OCC = 0.85    # evidência de ocupado
+        self.L_FREE = -0.4  # evidência de livre
+
+        self.L_MIN = -5.0
+        self.L_MAX = 5.0
+
         self.size_m = size_m
         self.resolution = resolution
         self.cells = int(size_m / resolution)
         self.center = self.cells // 2
 
-        self.grid = [[-1 for _ in range(self.cells)]
-                     for _ in range(self.cells)]
+        self.grid = [[0.0 for _ in range(self.cells)]
+             for _ in range(self.cells)]
+
 
     # ==================================================
     # Conversões de coordenadas
@@ -72,12 +73,15 @@ class OccupancyGrid:
         # Espaço livre
         for cx, cy in cells[:-1]:
             if 0 <= cx < self.cells and 0 <= cy < self.cells:
-                self.grid[cx][cy] = 0
+                self.grid[cx][cy] += self.L_FREE
+                self.grid[cx][cy] = max(self.L_MIN, self.grid[cx][cy])
 
         # Obstáculo
         cx, cy = cells[-1]
         if 0 <= cx < self.cells and 0 <= cy < self.cells:
-            self.grid[cx][cy] = 1
+            self.grid[cx][cy] += self.L_OCC
+            self.grid[cx][cy] = min(self.L_MAX, self.grid[cx][cy])
+
 
     # ==================================================
     # ATUALIZAÇÃO GLOBAL DO MAPA (aqui deve estar a merda!!!!)
@@ -131,12 +135,13 @@ class OccupancyGrid:
                 v = self.grid[i][j]
                 iy = self.cells - 1 - j  # INVERTE O Y AQUI
 
-                if v == -1:
-                    img[iy, i] = (40, 40, 40)        # desconhecido
-                elif v == 0:
+                if v > 0.5:
+                    img[iy, i] = (0, 255, 0)        # ocupado
+                elif v < -0.5:
                     img[iy, i] = (180, 180, 180)    # livre
                 else:
-                    img[iy, i] = (0, 255, 0)        # ocupado
+                    img[iy, i] = (40, 40, 40)       # desconhecido
+
 
         if scale != 1:
             img = cv2.resize(
