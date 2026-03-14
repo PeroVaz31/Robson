@@ -30,7 +30,7 @@ trajectory = []
 following = False
 
 LOOKAHEAD_DISTANCE = 0.6
-BASE_SPEED = 4.0 # Aumentei um pouco, 1.0 é muito lento para Pioneer
+BASE_SPEED = 2.0
 GOAL_THRESHOLD = 0.4
 
 def find_lookahead(path, x, y, Ld):
