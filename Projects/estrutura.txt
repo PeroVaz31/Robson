@@ -1,0 +1,40 @@
+Listagem de caminhos de pasta para o volume HD
+O número de série do volume é 8E75-FE35
+E:.
+¦   estrutura.txt
+¦   
++---Robson_V1
+¦   +---controllers
+¦   ¦   +---robson
+¦   ¦       ¦   final_map.png
+¦   ¦       ¦   mapping.py
+¦   ¦       ¦   motion.py
+¦   ¦       ¦   planning.py
+¦   ¦       ¦   robot_interface.py
+¦   ¦       ¦   robson.py
+¦   ¦       ¦   sensors.py
+¦   ¦       ¦   
+¦   ¦       +---__pycache__
+¦   ¦               mapping.cpython-313.pyc
+¦   ¦               planning.cpython-313.pyc
+¦   ¦               robot_interface.cpython-313.pyc
+¦   ¦               sensors.cpython-313.pyc
+¦   ¦               
+¦   +---worlds
+¦           .robson.jpg
+¦           robson.wbt
+¦           
++---Robson_V2
+    +---controllers
+    ¦   +---robson
+    ¦           mapping.py
+    ¦           motion.py
+    ¦           planning.py
+    ¦           robot_interface.py
+    ¦           robson.py
+    ¦           sensors.py
+    ¦           
+    +---worlds
+            .robson.jpg
+            robson.wbt
+            

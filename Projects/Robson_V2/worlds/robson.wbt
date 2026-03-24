@@ -1,0 +1,68 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/adept/pioneer3/protos/Pioneer3dx.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/plants/protos/BunchOfSunFlowers.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/devices/hokuyo/protos/HokuyoUrg04lx.proto"
+
+WorldInfo {
+}
+Viewpoint {
+  orientation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.0944
+  position -1.5731053567820585 0.055130739292876985 15.552855027200376
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+RectangleArena {
+  floorSize 15 5
+  floorTileSize 1 1
+  wallHeight 0.5
+}
+BunchOfSunFlowers {
+  translation 1.34 1.04 0
+}
+Pioneer3dx {
+  hidden position_0_0 3.1414443000004977
+  hidden position_0_1 726.3077936286369
+  hidden position_0_2 1012.3503205368095
+  hidden linearVelocity_0 -1.1893372699820681e-05 2.8967150909453496e-07 -8.681163889020059e-10
+  hidden angularVelocity_0 -5.911922268932397e-09 -7.61600869731138e-09 -1.7936591572948834e-08
+  hidden translation_1 -0.1918007959115499 -6.055562348000943e-07 3.349888239365106e-05
+  hidden rotation_1 -0.5774072543949068 -0.5773216609390075 -0.5773218880163484 4.188876139220566
+  hidden position_1_0 -3703.9460551673246
+  hidden linearVelocity_1 -1.1892663219581602e-05 2.868158911782555e-07 1.0892472425094153e-10
+  hidden angularVelocity_1 -5.877167795239907e-09 -7.616643496981785e-09 -1.7105704939584538e-08
+  hidden rotation_2 1 0 0 3.133276068631391
+  hidden linearVelocity_2 -1.1892509026233774e-05 2.868811232530114e-07 2.6397551650126343e-11
+  hidden angularVelocity_2 -7.737860503536728e-06 -0.0003171286920334415 6.362022042788397e-08
+  hidden translation_4 -5.074373349976493e-06 0.1649994889668777 -4.311699900164436e-05
+  hidden rotation_4 -0.6625101234857416 0.6625102047372196 -0.3495147563379191 2.4691077002998707
+  hidden linearVelocity_4 -1.189056062566213e-05 2.9035429923334496e-07 8.941847194705265e-13
+  hidden angularVelocity_4 -2.963215180351231e-06 -0.00012204117561961132 1.237969599842645e-08
+  hidden translation_9 -1.692428795663851e-05 -0.16500051060507187 3.8197882353706905e-05
+  hidden rotation_9 -0.3678121540034687 0.36781217178967246 0.8540658204440058 4.555292238767819
+  hidden linearVelocity_9 -1.1894497404710837e-05 2.904498828446513e-07 -2.761808492695583e-11
+  hidden angularVelocity_9 -2.963313426756672e-06 -0.00012204522961002807 1.2380702549939934e-08
+  translation 1.5095566936227032 0.10364797521990365 0.09488859208679296
+  rotation 0.02090723961345852 -0.00012912388165308979 0.9997814114389049 3.1173639747974975
+  controller "robson"
+  extensionSlot [
+    HokuyoUrg04lx {
+      translation 0 0 0.21
+    }
+    GPS {
+    }
+    Compass {
+    }
+    Display {
+      translation 0 0 0.01
+      name "debug_display"
+      width 300
+      height 300
+    }
+  ]
+}
